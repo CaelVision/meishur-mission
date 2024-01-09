@@ -44,8 +44,8 @@ for filename in os.listdir(directory_path):
             "images": img,
         })[0]
 
-        for i in range(1):
-            i += 1
+        for i in range(9):
+            i += 4
             idx = np.argmax(output[0, i, :])
             val = output[0, i, idx]
             print(f"Image: {filename}; row: {i - 3};\tcol: {idx}; val: {val:8f}")
