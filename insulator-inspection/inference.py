@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-import os
-import onnxruntime
+import cv2
 import time
+import onnxruntime as ort
 import numpy as np
-from PIL import Image
+import PIL as Image
 
-def preprocess_image(image_path, height, width):
-    image = Image.open(image_path)
-    image = image.resize((width, height), Image.LANCZOS)
+def preprocess_image(img, height, width):
+    image = cv2.resize(img, (width, height), interpolation=cv2.INTER_LANCZOS4)
     image_data = np.asarray(image).astype(np.float32)
     image_data = image_data.transpose([2, 0, 1])  # transpose to CHW
 
@@ -19,39 +18,56 @@ def preprocess_image(image_path, height, width):
     image_data = np.expand_dims(image_data, 0)
     return image_data
 
-print("TEST STARTED")
 
-session = onnxruntime.InferenceSession(
+
+# CSI camera args
+# gstreamer_args = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=(int)640, height=(int)480, format=(string)NV12, framerate=(fraction)30/1 ! nvvidconv ! video/x-raw, format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink"
+
+# uncompressed
+# gstreamer_args = f"v4l2src device=/dev/video0 ! video/x-raw, width=1080, height=720, format=NV12, framerate=30/1 ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
+
+# compressed
+gstreamer_args= f"v4l2src device=/dev/video0 ! image/jpeg,format=MJPG,width=1280,height=720,framerate=30/1 ! nvv4l2decoder mjpeg=1 ! nvvidconv ! videoconvert ! video/x-raw,format=BGR ! appsink"
+
+print("[INFO] Loading Model....")
+session = ort.InferenceSession(
     "/home/stephen/ws/meishur-mission/insulator-inspection/converted-model.onnx",
-    # providers=["TensorrtExecutionProvider"],
-    providers=["CPUExecutionProvider"],
-    # providers=["CUDAExecutionProvider"],
+    providers=["CUDAExecutionProvider"]
 )
+print("[INFO] Model Checked and loaded")
+
+vid = cv2.VideoCapture(gstreamer_args, cv2.CAP_GSTREAMER)
+
+print("uh device opened??")
+
+while(True): 
+
+    # Capture the video frame 
+    # by frame 
+    print("reading frame", time.time())
+    ret, frame = vid.read() 
+
+    imageData = preprocess_image(frame, 640, 640)
+
+    print(type(imageData))
+
+    # Display the resulting frame 
+    cv2.imshow('frame', frame)
+
+    # Use model
+    outputs = session.run(output_names=[], input_feed={"images": imageData})
+    
+    #print outputs
+    print(outputs)
+
+    # Close window with q
+    if cv2.waitKey(1) & 0xFF == ord('q'): 
+        break
+
+# After the loop release the cap object 
+vid.release() 
+# Destroy all the windows 
+cv2.destroyAllWindows() 
+print("all windows destroyed")
 
 
-
-directory_path = "/home/stephen/ws/insulator-classification/glass/train/images"
-init_time = time.time()
-
-
-
-for filename in os.listdir(directory_path):
-    if filename.endswith(".jpg") or filename.endswith(".jpeg") or filename.endswith(".png"):
-        image_path = os.path.join(directory_path, filename)
-        img = preprocess_image(image_path, 640, 640)
-
-        output = session.run(output_names=[], input_feed={
-            "images": img,
-        })[0]
-
-        for i in range(9):
-            i += 4
-            idx = np.argmax(output[0, i, :])
-            val = output[0, i, idx]
-            print(f"Image: {filename}; row: {i - 3};\tcol: {idx}; val: {val:8f}")
-
-end_time = time.time()
-
-total_time = end_time - init_time
-print("TEST ENDED")
-print(total_time)
