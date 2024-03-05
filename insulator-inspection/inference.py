@@ -34,6 +34,10 @@ session = ort.InferenceSession(
     "/home/stephen/ws/meishur-mission/insulator-inspection/converted-model.onnx",
     providers=["CUDAExecutionProvider"]
 )
+
+with open("class_names.txt") as f:
+  class_names = f.read().splitlines()
+
 print("[INFO] Model Checked and loaded")
 
 vid = cv2.VideoCapture(gstreamer_args, cv2.CAP_GSTREAMER)
@@ -55,10 +59,20 @@ while(True):
     cv2.imshow('frame', frame)
 
     # Use model
-    outputs = session.run(output_names=[], input_feed={"images": imageData})
+    output = session.run(output_names=[], input_feed={"images": imageData})[0].squeeze()
     
+    probabilities = output[4:,:]
+    probabilities = probabilities / np.max(probabilities)
+    result = np.argsort(probabilities, axis=1)
+
+    # take the last three columns and reverse the order to descending
+    result = result[:,-3:][:,::-1]
+
     #print outputs
-    print(outputs)
+    print("\n-----")
+    for i, n in enumerate(class_names):
+        print(f"{n}: {probabilities[i,result[i,0]]}")
+    print("-----\n")
 
     # Close window with q
     if cv2.waitKey(1) & 0xFF == ord('q'): 
