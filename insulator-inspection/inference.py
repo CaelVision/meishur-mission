@@ -5,6 +5,8 @@ import onnxruntime as ort
 import numpy as np
 import PIL as Image
 
+DETECTION_THRESH = 0.5
+
 def preprocess_image(img, height, width):
     image = cv2.resize(img, (width, height), interpolation=cv2.INTER_LANCZOS4)
     image_data = np.asarray(image).astype(np.float32)
@@ -62,17 +64,19 @@ while(True):
     output = session.run(output_names=[], input_feed={"images": imageData})[0].squeeze()
     
     probabilities = output[4:,:]
-    probabilities = probabilities / np.max(probabilities)
-    result = np.argsort(probabilities, axis=1)
 
-    # take the last three columns and reverse the order to descending
-    result = result[:,-3:][:,::-1]
+    if np.max(probabilities) > DETECTION_THRESH:
 
-    #print outputs
-    print("\n-----")
-    for i, n in enumerate(class_names):
-        print(f"{n}: {probabilities[i,result[i,0]]}")
-    print("-----\n")
+        result = np.argsort(probabilities, axis=1)
+
+        # take the last three columns and reverse the order to descending
+        result = result[:,-3:][:,::-1]
+
+        # print outputs
+        print("\n-----")
+        for i, n in enumerate(class_names):
+            print(f"{n}: {probabilities[i,result[i,0]]}")
+        print("-----\n")
 
     # Close window with q
     if cv2.waitKey(1) & 0xFF == ord('q'): 
