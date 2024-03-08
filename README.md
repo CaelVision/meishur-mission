@@ -5,8 +5,8 @@
 
 # Insulator Inspection
 
-- [ ] Stream camera data to YOLOv8 model
-- [ ] Log detection result
+- [x] Stream camera data to YOLOv8 model
+- [x] Log detection result
 - [ ] (Optional) fine tune the model for better accuracy/performance
 
 # Docking
