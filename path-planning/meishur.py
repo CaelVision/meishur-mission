@@ -5,8 +5,6 @@ from collections import namedtuple
 
 EARTH_RADIUS = 6378137.0 # approx spherical earth in meters
 
-dronekit.LocationGlobalRelative
-
 class Mission:
 
   def __init__(self, drone, altitude=5):
