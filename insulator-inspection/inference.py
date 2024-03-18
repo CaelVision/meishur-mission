@@ -5,7 +5,7 @@ import onnxruntime as ort
 import numpy as np
 import PIL as Image
 
-DETECTION_THRESH = 0.5
+DETECTION_THRESH = 0.3
 
 def preprocess_image(img, height, width):
     image = cv2.resize(img, (width, height), interpolation=cv2.INTER_LANCZOS4)
@@ -29,7 +29,7 @@ def preprocess_image(img, height, width):
 # gstreamer_args = f"v4l2src device=/dev/video0 ! video/x-raw, width=1080, height=720, format=NV12, framerate=30/1 ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
 
 # compressed
-gstreamer_args= f"v4l2src device=/dev/video0 ! image/jpeg,format=MJPG,width=1280,height=720,framerate=30/1 ! nvv4l2decoder mjpeg=1 ! nvvidconv ! videoconvert ! video/x-raw,format=BGR ! appsink"
+gstreamer_args= f"v4l2src device=/dev/video1 ! image/jpeg,format=MJPG,width=800,height=600,framerate=30/1 ! nvv4l2decoder mjpeg=1 ! nvvidconv ! videoconvert ! video/x-raw,format=BGR ! appsink"
 
 print("[INFO] Loading Model....")
 session = ort.InferenceSession(
@@ -54,8 +54,6 @@ while(True):
     ret, frame = vid.read() 
 
     imageData = preprocess_image(frame, 640, 640)
-
-    print(type(imageData))
 
     # Display the resulting frame 
     cv2.imshow('frame', frame)
