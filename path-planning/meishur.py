@@ -90,9 +90,9 @@ class Mission:
 
 class Drone:
 
-  def __init__(self, target):
+  def __init__(self, target, wait_ready=False):
     print("connecting to drone")
-    self.vehicle = dronekit.connect(target, wait_ready=True, timeout=120)
+    self.vehicle = dronekit.connect(target, wait_ready=wait_ready, timeout=120)
     print("drone connected")
 
   def __del__(self):
